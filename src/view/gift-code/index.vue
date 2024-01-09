@@ -14,7 +14,7 @@
             :header-cell-style="{ 'text-align': 'center' }"
             :row-style="{ height: '60px' }"
          >
-            <el-table-column fixed type="index" label="#" width="50px" :index="indexMethod" />
+<!--            <el-table-column fixed type="index" label="#" width="50px" :index="indexMethod" />-->
             <el-table-column prop="id" label="ID" width="100px" />
             <el-table-column prop="nickname" label="Name">
                <template #default="scope">
