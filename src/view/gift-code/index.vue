@@ -93,17 +93,17 @@ let isClick = ref(false);
 
 const stoveLvImageInfo = computed(() => {
   return tableData.value.map(row => {
-    const isMultipleOfFive = row.stove_lv % 5 === 0;
+    const isMultipleOfFive = Number(row.stove_lv) % 5 === 0;
 
-    if (row.stove_lv > 30 && row.stove_lv < 35) {
-      const number = row.stove_lv - 30;
+    if (Number(row.stove_lv) > 30 && Number(row.stove_lv) < 35) {
+      const number = Number(row.stove_lv) - 30;
       return {
         showImage: false,
         showNumber: number >= 1,
-        number: number >= 1 ? `${row.stove_lv} +${number}` : '',
+        number: number >= 1 ? `${Number(row.stove_lv)} +${number}` : '',
       };
-    } else if (row.stove_lv >= 35) {
-      const plusNumber = isMultipleOfFive ? "" : ` +${(row.stove_lv - 35) % 5}`;
+    } else if (Number(row.stove_lv) >= 35) {
+      const plusNumber = isMultipleOfFive ? "" : ` +${(Number(row.stove_lv) - 35) % 5}`;
       return {
         showImage: true,
         showNumber: !isMultipleOfFive && plusNumber !== "",
@@ -152,7 +152,7 @@ async function startConfirm() {
 async function getRoleInfo(data: any, index: number) {
    const res = await getRoleInfoApi(data);
    tableData.value[index].loginStatus = res?.code;
-   const { avatar_image, nickname, kid, stove_lv, stove_lv_content } = res.data;
+   const { avatar_image, nickname, stove_lv, stove_lv_content } = res.data;
    tableData.value[index].avatar_image = avatar_image;
    tableData.value[index].nickname = nickname;
    tableData.value[index].stove_lv = stove_lv;
