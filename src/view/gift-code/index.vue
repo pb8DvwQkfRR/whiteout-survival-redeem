@@ -100,7 +100,7 @@ const stoveLvImageInfo = computed(() => {
       return {
         showImage: false,
         showNumber: number >= 1,
-        number: number >= 1 ? `${Number(row.stove_lv)} +${number}` : '',
+        number: number >= 1 ? `${Number(row.stove_lv_content)} +${number}` : '',
       };
     } else if (Number(row.stove_lv) >= 35) {
       const plusNumber = isMultipleOfFive ? "" : ` +${(Number(row.stove_lv) - 35) % 5}`;
