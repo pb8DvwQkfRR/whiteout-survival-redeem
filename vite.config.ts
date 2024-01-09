@@ -9,7 +9,7 @@ function _resolve(dir: string) {
    return path.resolve(__dirname, dir);
 }
 export default defineConfig({
-   base: '/whiteout_survival_help/',
+   base: '',
    resolve: {
       alias: {
          '@': _resolve('src'),

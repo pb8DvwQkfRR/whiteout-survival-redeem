@@ -1,8 +1,8 @@
 <template>
    <div class="gift-code">
       <div class="input">
-         <el-input v-model.trim="cdk" placeholder="输入cdk" clearable maxlength="20"> </el-input>
-         <el-button type="primary" @click="startConfirm" :disabled="!cdk">一键领取</el-button>
+         <el-input v-model.trim="cdk" placeholder="CODE HERE" clearable maxlength="20"> </el-input>
+         <el-button type="primary" @click="startConfirm" :disabled="!cdk">Redeem</el-button>
       </div>
       <div class="list">
          <el-table
@@ -15,18 +15,36 @@
             :row-style="{ height: '60px' }"
          >
             <el-table-column fixed type="index" label="#" width="50px" :index="indexMethod" />
-            <el-table-column prop="id" label="id" width="100px" />
-            <el-table-column prop="kid" label="大区" width="100px">
+            <el-table-column prop="id" label="ID" width="100px" />
+            <el-table-column prop="nickname" label="Name">
                <template #default="scope">
-                  {{ scope.row.kid || '登录获取' }}
+                  {{ scope.row.nickname || '...' }}
                </template>
             </el-table-column>
-            <el-table-column prop="nickname" label="昵称">
-               <template #default="scope">
-                  {{ scope.row.nickname || '登录获取' }}
-               </template>
-            </el-table-column>
-            <el-table-column prop="avatar_image" label="头像" width="100px">
+           <el-table-column prop="stove_lv" label="F Lv" width="100px">
+             <template #default="scope">
+               <div class="stove-lv" v-if="stoveLvImageInfo[scope.$index].showImage || stoveLvImageInfo[scope.$index].showNumber">
+                 <el-image
+                     v-if="stoveLvImageInfo[scope.$index].showImage"
+                     style="width: 35px; height: 35px"
+                     :src="scope.row.stove_lv_content"
+                     :preview-src-list="[scope.row.stove_lv_content]"
+                     preview-teleported
+                 >
+                   <template #error>
+                     <div class="image-slot" style="width: 35px; height: 35px">
+                       <el-icon><icon-picture size="35" /></el-icon>
+                     </div>
+                   </template>
+                 </el-image>
+                 <span v-if="stoveLvImageInfo[scope.$index].showNumber">{{ stoveLvImageInfo[scope.$index].number }}</span>
+               </div>
+               <div v-else>
+                 {{ scope.row.stove_lv || '...' }}
+               </div>
+             </template>
+           </el-table-column>
+            <el-table-column prop="avatar_image" label="Avatar" width="100px">
                <template #default="scope">
                   <el-image
                      style="width: 50px; height: 50px"
@@ -42,18 +60,18 @@
                   </el-image>
                </template>
             </el-table-column>
-            <el-table-column prop="loginStatus" label="登录状态" width="120px">
+            <el-table-column prop="loginStatus" label="Login Status" width="130px">
                <template #default="scope">
                   <el-tag class="ml-2" :type="scope.row.loginStatus === 0 ? 'success' : 'info'">
-                     {{ scope.row.loginStatus === 0 ? '登录成功' : '未登录' }}</el-tag
+                     {{ scope.row.loginStatus === 0 ? 'Success' : 'Not Logged in' }}</el-tag
                   >
                </template>
             </el-table-column>
 
-            <el-table-column prop="confirmStatus" label="领取状态" width="120px">
+            <el-table-column prop="confirmStatus" label="Status" width="130px">
                <template #default="scope">
                   <el-tag class="ml-2" :type="scope.row.getStatus === 0 ? 'success' : 'info'">
-                     {{ scope.row.getStatus === 0 ? '领取成功' : '未领取' }}</el-tag
+                     {{ scope.row.getStatus === 0 ? 'Redeemed' : 'Not Redeemed' }}</el-tag
                   >
                </template>
             </el-table-column>
@@ -68,9 +86,38 @@ import { getRoleInfoApi, exchangeCodeApi } from '@/api';
 import { ids } from '@/assets/userData';
 import { getTimestamp } from '@/utils';
 import { Picture as IconPicture } from '@element-plus/icons-vue';
+import { computed } from 'vue';
 
 const cdk = ref('');
 let isClick = ref(false);
+
+const stoveLvImageInfo = computed(() => {
+  return tableData.value.map(row => {
+    const isMultipleOfFive = row.stove_lv % 5 === 0;
+
+    if (row.stove_lv > 30 && row.stove_lv < 35) {
+      const number = row.stove_lv - 30;
+      return {
+        showImage: false,
+        showNumber: number >= 1,
+        number: number >= 1 ? `${row.stove_lv} +${number}` : '',
+      };
+    } else if (row.stove_lv >= 35) {
+      const plusNumber = isMultipleOfFive ? "" : ` +${(row.stove_lv - 35) % 5}`;
+      return {
+        showImage: true,
+        showNumber: !isMultipleOfFive && plusNumber !== "",
+        number: plusNumber,
+      };
+    }
+
+    return {
+      showImage: false,
+      showNumber: false,
+      number: '',
+    };
+  });
+});
 
 const tableData = ref(
    ids.map((item) => {
@@ -80,7 +127,8 @@ const tableData = ref(
          getStatus: 1,
          nickname: '',
          avatar_image: '',
-         kid: '',
+         stove_lv: '',
+         stove_lv_content: '',
       };
    })
 );
@@ -104,10 +152,11 @@ async function startConfirm() {
 async function getRoleInfo(data: any, index: number) {
    const res = await getRoleInfoApi(data);
    tableData.value[index].loginStatus = res?.code;
-   const { avatar_image, nickname, kid } = res.data;
+   const { avatar_image, nickname, kid, stove_lv, stove_lv_content } = res.data;
    tableData.value[index].avatar_image = avatar_image;
    tableData.value[index].nickname = nickname;
-   tableData.value[index].kid = kid;
+   tableData.value[index].stove_lv = stove_lv;
+   tableData.value[index].stove_lv_content = stove_lv_content;
 
    return res;
 }
@@ -155,7 +204,15 @@ const indexMethod = (index: number) => {
       }
    }
 }
-
+.stove-lv {
+  position: relative;
+}
+.stove-lv span {
+  position: sticky;
+  right: 10px;
+  bottom: 10px;
+  color: #606266;
+}
 .el-image {
    max-width: 50px;
    max-height: 50px;

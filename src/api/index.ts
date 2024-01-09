@@ -1,7 +1,10 @@
 import { appendSign } from '@/utils';
 import defHttp from '@/utils/http/index';
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export function getRoleInfoApi(data: any) {
+export async function getRoleInfoApi(data: any) {
+   await sleep(1500);
+
    return defHttp.post({
       url: '/player',
       data: appendSign(data),
