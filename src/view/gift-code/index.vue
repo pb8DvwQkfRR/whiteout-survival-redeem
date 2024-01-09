@@ -167,9 +167,9 @@ async function exchangeCode(data: any, index: number) {
    return res;
 }
 
-const indexMethod = (index: number) => {
-   return index + 1;
-};
+// const indexMethod = (index: number) => {
+//    return index + 1;
+// };
 
 // function filterStatus(code: number) {
 //    switch (code) {
