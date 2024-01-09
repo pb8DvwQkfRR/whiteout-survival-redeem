@@ -28,8 +28,6 @@
                      v-if="stoveLvImageInfo[scope.$index].showImage"
                      style="width: 35px; height: 35px"
                      :src="scope.row.stove_lv_content"
-                     :preview-src-list="[scope.row.stove_lv_content]"
-                     preview-teleported
                  >
                    <template #error>
                      <div class="image-slot" style="width: 35px; height: 35px">
@@ -49,8 +47,6 @@
                   <el-image
                      style="width: 50px; height: 50px"
                      :src="scope.row.avatar_image"
-                     :preview-src-list="[scope.row.avatar_image]"
-                     preview-teleported
                   >
                      <template #error>
                         <div class="image-slot" style="width: 50px; height: 50px">
