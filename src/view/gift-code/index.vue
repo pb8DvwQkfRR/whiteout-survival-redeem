@@ -7,7 +7,7 @@
       <div class="list">
          <el-table
             :data="tableData"
-            style="width: 100%"
+            style="width: 100%; font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;"
             border
             stripe
             :cell-style="{ textAlign: 'center' }"
@@ -56,15 +56,15 @@
                   </el-image>
                </template>
             </el-table-column>
-            <el-table-column prop="loginStatus" label="Login Status" width="130px">
+            <el-table-column prop="loginStatus" label="Login" width="130px">
                <template #default="scope">
                   <el-tag class="ml-2" :type="scope.row.loginStatus === 0 ? 'success' : 'info'">
-                     {{ scope.row.loginStatus === 0 ? 'Success' : '...' }}</el-tag
-                  >
+                     {{ scope.row.loginStatus === 0 ? 'Success' : '...' }}
+                  </el-tag>
                </template>
             </el-table-column>
 
-            <el-table-column prop="confirmStatus" label="Status" width="130px">
+            <el-table-column prop="confirmStatus" label="Redeem" width="130px">
                <template #default="scope">
                   <el-tag class="ml-2" :type="scope.row.getStatus === 0 ? 'success' : 'info'">
 <!--                     {{ scope.row.getStatus === 0 ? 'Redeemed' : 'Not Redeemed' }}-->
@@ -192,7 +192,6 @@ async function exchangeCode(data: any, index: number) {
 .input {
    display: flex;
 }
-
 .list {
    margin-top: 20px;
 
