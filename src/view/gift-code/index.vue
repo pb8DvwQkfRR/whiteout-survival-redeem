@@ -59,7 +59,7 @@
             <el-table-column prop="loginStatus" label="Login Status" width="130px">
                <template #default="scope">
                   <el-tag class="ml-2" :type="scope.row.loginStatus === 0 ? 'success' : 'info'">
-                     {{ scope.row.loginStatus === 0 ? 'Success' : 'Not Logged in' }}</el-tag
+                     {{ scope.row.loginStatus === 0 ? 'Success' : '...' }}</el-tag
                   >
                </template>
             </el-table-column>
@@ -67,8 +67,9 @@
             <el-table-column prop="confirmStatus" label="Status" width="130px">
                <template #default="scope">
                   <el-tag class="ml-2" :type="scope.row.getStatus === 0 ? 'success' : 'info'">
-                     {{ scope.row.getStatus === 0 ? 'Redeemed' : 'Not Redeemed' }}</el-tag
-                  >
+<!--                     {{ scope.row.getStatus === 0 ? 'Redeemed' : 'Not Redeemed' }}-->
+                    {{ scope.row.msg || '...' }}
+                  </el-tag>
                </template>
             </el-table-column>
          </el-table>
@@ -125,6 +126,7 @@ const tableData = ref(
          avatar_image: '',
          stove_lv: '',
          stove_lv_content: '',
+         msg: '',
       };
    })
 );
@@ -160,6 +162,8 @@ async function getRoleInfo(data: any, index: number) {
 async function exchangeCode(data: any, index: number) {
    const res = await exchangeCodeApi(data);
    tableData.value[index].getStatus = res?.code;
+   const msg = res.msg;
+   tableData.value[index].msg = msg;
    return res;
 }
 
