@@ -7,7 +7,7 @@
       <div class="list">
          <el-table
             :data="tableData"
-            style="width: 100%; font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;"
+            style="width: 100%; font-family: var(--el-font-family)"
             border
             stripe
             :cell-style="{ textAlign: 'center' }"
