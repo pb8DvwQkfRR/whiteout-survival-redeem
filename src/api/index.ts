@@ -3,7 +3,7 @@ import defHttp from '@/utils/http/index';
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function getRoleInfoApi(data: any) {
-   await sleep(1500);
+   await sleep(1000);
 
    return defHttp.post({
       url: '/player',

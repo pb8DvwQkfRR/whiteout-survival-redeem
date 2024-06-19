@@ -1,97 +1,121 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import type { HYRequestConfig } from './type';
+import { ElNotification } from 'element-plus';
 
-// 拦截器: 蒙版Loading/token/修改配置
+const DEFAULT_RETRY_CONFIG = {
+  retries: 20,
+  retryDelay: 8000, // 8 seconds
+};
 
-/**
- * 两个难点:
- *  1.拦截器进行精细控制
- *    > 全局拦截器
- *    > 实例拦截器
- *    > 单次请求拦截器
- *
- *  2.响应结果的类型处理(泛型)
- */
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function retryRequest<T>(fn: () => Promise<T>, retries: number, retryDelay: number): Promise<T> {
+  let retryCount = 0;
+  while (retryCount < retries) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      if (err.response && [429, 500, 503].includes(err.response.status)) {
+        retryCount++;
+        const delay = retryDelay + (retryCount - 1) * 1000; // 线性退避时间，每次增加1秒
+        ElNotification({
+          title: 'Hold on...',
+          message: `Request failed with status ${err.response.status}. Retrying... Attempt ${retryCount}`,
+          type: 'warning',
+        });
+        await sleep(delay);
+        if (retryCount >= retries) {
+          ElNotification({
+            title: 'Request Failed',
+            message: `Request failed after ${retryCount} attempts`,
+            type: 'error',
+          });
+          return Promise.reject(err);
+        }
+      } else {
+        return Promise.reject(err);
+      }
+    }
+  }
+  throw new Error('Max retries reached');
+}
 
 class HYRequest {
-   instance: AxiosInstance;
+  instance: AxiosInstance;
+  retryConfig: { retries: number; retryDelay: number };
 
-   // request实例 => axios的实例
-   constructor(config: HYRequestConfig) {
-      this.instance = axios.create(config);
+  constructor(config: HYRequestConfig) {
+    this.instance = axios.create(config);
+    this.retryConfig = { ...DEFAULT_RETRY_CONFIG, ...config.retryConfig };
 
-      // 每个instance实例都添加拦截器
+    this.setupInterceptors(config);
+  }
+
+  private setupInterceptors(config: HYRequestConfig) {
+    this.instance.interceptors.request.use(
+      (config) => config,
+      (err) => Promise.reject(err)
+    );
+
+    this.instance.interceptors.response.use(
+      (res) => res.data,
+      (err) => Promise.reject(err)
+    );
+
+    if (config.interceptors) {
       this.instance.interceptors.request.use(
-         (config) => {
-            // loading/token
-            return config;
-         },
-         (err) => {
-            return err;
-         }
+        config.interceptors.requestSuccessFn,
+        config.interceptors.requestFailureFn
       );
       this.instance.interceptors.response.use(
-         (res) => {
-            // const code = res.data.code;
-            // if (code === 0) {
-            //    return res.data;
-            // }
-            return res.data;
-         },
-         (err) => {
-            return Promise.reject(err);
-         }
+        config.interceptors.responseSuccessFn,
+        config.interceptors.responseFailureFn
       );
+    }
+  }
 
-      // 针对特定的hyRequest实例添加拦截器
-      this.instance.interceptors.request.use(
-         config.interceptors?.requestSuccessFn,
-         config.interceptors?.requestFailureFn
-      );
-      this.instance.interceptors.response.use(
-         config.interceptors?.responseSuccessFn,
-         config.interceptors?.responseFailureFn
-      );
-   }
-
-   // 封装网络请求的方法
-   // T => IHomeData
-   request<T = any>(config: HYRequestConfig<T>) {
-      // 单次请求的成功拦截处理
+  async request<T = any>(config: HYRequestConfig<T>): Promise<T> {
+    const requestFn = () => {
       if (config.interceptors?.requestSuccessFn) {
-         config = config.interceptors.requestSuccessFn(config);
+        config = config.interceptors.requestSuccessFn(config);
       }
 
-      // 返回Promise
       return new Promise<T>((resolve, reject) => {
-         this.instance
-            .request<any, T>(config)
-            .then((res) => {
-               // 单词响应的成功拦截处理
-               if (config.interceptors?.responseSuccessFn) {
-                  res = config.interceptors.responseSuccessFn(res);
-               }
-               resolve(res);
-            })
-            .catch((err) => {
-               reject(err);
-            });
+        this.instance
+          .request<any, T>(config)
+          .then((res) => {
+            if (config.interceptors?.responseSuccessFn) {
+              res = config.interceptors.responseSuccessFn(res);
+            }
+            resolve(res);
+          })
+          .catch((err) => {
+            reject(err);
+          });
       });
-   }
+    };
 
-   get<T = any>(config: HYRequestConfig<T>) {
-      return this.request({ ...config, method: 'GET' });
-   }
-   post<T = any>(config: HYRequestConfig<T>) {
-      return this.request({ ...config, method: 'POST' });
-   }
-   delete<T = any>(config: HYRequestConfig<T>) {
-      return this.request({ ...config, method: 'DELETE' });
-   }
-   patch<T = any>(config: HYRequestConfig<T>) {
-      return this.request({ ...config, method: 'PATCH' });
-   }
+    return retryRequest(requestFn, this.retryConfig.retries, this.retryConfig.retryDelay);
+  }
+
+  get<T = any>(config: HYRequestConfig<T>) {
+    return this.request({ ...config, method: 'GET' });
+  }
+
+  post<T = any>(config: HYRequestConfig<T>) {
+    return this.request({ ...config, method: 'POST' });
+  }
+
+  delete<T = any>(config: HYRequestConfig<T>) {
+    return this.request({ ...config, method: 'DELETE' });
+  }
+
+  patch<T = any>(config: HYRequestConfig<T>) {
+    return this.request({ ...config, method: 'PATCH' });
+  }
 }
 
 export default HYRequest;
