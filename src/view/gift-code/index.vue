@@ -72,8 +72,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { ElNotification, ElLoading } from 'element-plus';
+import { ref, onMounted, computed, watch } from 'vue';
+import { ElLoading } from 'element-plus';
 import { getRoleInfoApi, exchangeCodeApi } from '@/api';
 import { ids } from '@/assets/userData';
 import { getTimestamp } from '@/utils';
@@ -132,7 +132,18 @@ watch(cdk, (newVal) => {
   }
 });
 
+onMounted(() => {
+  if (!loadingContainer.value) {
+    console.error('Loading container is not available.');
+  }
+});
+
 async function startConfirm() {
+  if (!loadingContainer.value) {
+    console.error('Loading container is not available.');
+    return;
+  }
+
   isLoading.value = true;
   completedCount.value = 0;
   const totalIds = tableData.value.length;
