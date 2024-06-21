@@ -16,10 +16,23 @@
             :header-cell-style="{ 'text-align': 'center' }"
             :row-style="{ height: '60px' }"
         >
-          <el-table-column prop="id" label="ID" width="100px" />
+          <el-table-column prop="id" label="ID" width="90px" />
           <el-table-column prop="nickname" label="Name">
             <template #default="scope">
-              {{ scope.row.nickname || '...' }}
+              <div class="name-status">
+                <span>{{ scope.row.nickname || '...' }}</span>
+                <el-tooltip
+                    v-if="scope.row.isCompleted"
+                    :content="scope.row.msg || ''"
+                    placement="top"
+                >
+                  <el-icon :color="getStatusColor(scope.row)">
+                    <Check v-if="scope.row.getStatus === 0" />
+                    <Close v-else-if="scope.row.getStatus === 1 && scope.row.err_code !== 40008" />
+                    <Warning v-else-if="scope.row.err_code === 40008" />
+                  </el-icon>
+                </el-tooltip>
+              </div>
             </template>
           </el-table-column>
           <el-table-column prop="avatar_image" label="Avatar + F Lv" width="150px">
@@ -58,13 +71,6 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="confirmStatus" label="Redeem" width="130px">
-            <template #default="scope">
-              <el-tag class="ml-2" :type="scope.row.getStatus === 0 ? 'success' : 'info'">
-                {{ scope.row.msg || '...' }}
-              </el-tag>
-            </template>
-          </el-table-column>
         </el-table>
       </div>
     </div>
@@ -77,7 +83,7 @@ import { ElLoading } from 'element-plus';
 import { getRoleInfoApi, exchangeCodeApi } from '@/api';
 import { ids } from '@/assets/userData';
 import { getTimestamp } from '@/utils';
-import { Picture as IconPicture } from '@element-plus/icons-vue';
+import { Picture as IconPicture, Check, Close, Warning } from '@element-plus/icons-vue';
 
 const cdk = ref('');
 const isLoading = ref(false);
@@ -95,6 +101,8 @@ const tableData = ref(
       stove_lv: '',
       stove_lv_content: '',
       msg: '',
+      isCompleted: false,
+      err_code: null,
     }))
 );
 
@@ -138,6 +146,12 @@ onMounted(() => {
   }
 });
 
+function getStatusColor(row) {
+  if (row.getStatus === 0) return 'green';
+  if (row.err_code === 40008) return 'gray';
+  return 'red';
+}
+
 async function startConfirm() {
   if (!loadingContainer.value) {
     console.error('Loading container is not available.');
@@ -166,6 +180,7 @@ async function startConfirm() {
     } catch (error) {
       console.error(error);
     }
+    tableData.value[i].isCompleted = true;
   }
 
   loading.close();
@@ -186,8 +201,8 @@ async function getRoleInfo(data: any, index: number) {
 async function exchangeCode(data: any, index: number) {
   const res = await exchangeCodeApi(data);
   tableData.value[index].getStatus = res?.code;
-  const msg = res.msg;
-  tableData.value[index].msg = msg;
+  tableData.value[index].msg = res.msg;
+  tableData.value[index].err_code = res.err_code;
   return res;
 }
 </script>
@@ -202,29 +217,14 @@ async function exchangeCode(data: any, index: number) {
 .list {
   margin-top: 20px;
   text-align: center;
-
-  .item {
-    padding: 10px 0;
-
-    .id {
-      margin-left: 20px;
-    }
-  }
 }
 .avatar-f-lv {
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
 .stove-lv {
   margin-left: 10px;
-}
-.stove-lv span {
-  position: sticky;
-  right: 10px;
-  bottom: 10px;
-  color: #606266;
 }
 .el-image {
   max-width: 50px;
@@ -247,6 +247,7 @@ async function exchangeCode(data: any, index: number) {
   overflow-x: auto;
 }
 .loading-container {
+  font-family: var(--el-font-family);
   position: fixed;
   top: 50%;
   left: 50%;
@@ -255,5 +256,14 @@ async function exchangeCode(data: any, index: number) {
   height: 100%;
   z-index: 1000;
   pointer-events: none;
+}
+.name-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.el-icon {
+  font-size: 18px;
 }
 </style>
