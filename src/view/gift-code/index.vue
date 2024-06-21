@@ -1,8 +1,20 @@
 <template>
+  <div class="page-title">
+    <h2 class="title">WoS Code Redeem</h2>
+      <el-tag class="version-tag">v240621</el-tag>
+  </div>
   <div class="gift-code">
     <div class="input">
       <el-input v-model.trim="cdk" placeholder="CODE HERE" clearable maxlength="20"></el-input>
       <el-button type="primary" @click="startConfirm" :disabled="!cdk || isLoading">Redeem</el-button>
+      <el-upload
+          class="upload-ids"
+          action=""
+          :show-file-list="false"
+          :before-upload="handleUpload"
+      >
+        <el-button>Upload ID</el-button>
+      </el-upload>
     </div>
     <div class="loading-container" ref="loadingContainer"></div>
     <div class="list" ref="listContainer">
@@ -35,7 +47,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="avatar_image" label="Avatar + F Lv" width="150px">
+          <el-table-column prop="avatar_image" label="Avatar / F Lv" width="150px">
             <template #default="scope">
               <div class="avatar-f-lv">
                 <el-image
@@ -44,7 +56,7 @@
                 >
                   <template #error>
                     <div class="image-slot" style="width: 50px; height: 50px">
-                      <el-icon><icon-picture size="50" /></el-icon>
+                      <el-icon><IconPicture size="50" /></el-icon>
                     </div>
                   </template>
                 </el-image>
@@ -56,7 +68,7 @@
                     >
                       <template #error>
                         <div class="image-slot" style="width: 35px; height: 35px">
-                          <el-icon><icon-picture size="35" /></el-icon>
+                          <el-icon><IconPicture size="35" /></el-icon>
                         </div>
                       </template>
                     </el-image>
@@ -65,7 +77,7 @@
                     {{ stoveLvImageInfo[scope.$index].number }}
                   </template>
                   <template v-else>
-                    {{ scope.row.stove_lv || '...' }}
+                    {{ scope.row.stove_lv }}
                   </template>
                 </div>
               </div>
@@ -79,10 +91,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
-import { ElLoading } from 'element-plus';
+import { ElLoading, ElTag } from 'element-plus';
 import { getRoleInfoApi, exchangeCodeApi } from '@/api';
 import { ids } from '@/assets/userData';
 import { getTimestamp } from '@/utils';
+
 import { Picture as IconPicture, Check, Close, Warning } from '@element-plus/icons-vue';
 
 const cdk = ref('');
@@ -91,7 +104,10 @@ const completedCount = ref(0);
 const listContainer = ref(null);
 const tableContainer = ref(null);
 const loadingContainer = ref(null);
-
+interface Row {
+  getStatus: number;
+  err_code: number | null;
+}
 const tableData = ref(
     ids.map((item) => ({
       id: item,
@@ -146,7 +162,7 @@ onMounted(() => {
   }
 });
 
-function getStatusColor(row) {
+function getStatusColor(row: Row) {
   if (row.getStatus === 0) return 'green';
   if (row.err_code === 40008) return 'gray';
   return 'red';
@@ -204,6 +220,31 @@ async function exchangeCode(data: any, index: number) {
   tableData.value[index].msg = res.msg;
   tableData.value[index].err_code = res.err_code;
   return res;
+}
+
+function handleUpload(file: File) {
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const content = (event.target as FileReader).result as string;
+    const idsFromFile = content.split('\n').map(id => id.trim()).filter(id => id);
+
+    const newTableData = idsFromFile.map(id => ({
+      id,
+      getStatus: 1,
+      nickname: '',
+      avatar_image: '',
+      stove_lv: '',
+      stove_lv_content: '',
+      msg: '',
+      isCompleted: false,
+      err_code: null,
+    }));
+
+    tableData.value = newTableData;
+  };
+
+  reader.readAsText(file);
+  return false;
 }
 </script>
 
@@ -265,5 +306,22 @@ async function exchangeCode(data: any, index: number) {
 }
 .el-icon {
   font-size: 18px;
+}
+.page-title {
+  font-family: var(--el-font-family);
+  text-align: center;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.title {
+  margin: 0;
+  font-size: 24px;
+}
+.version-tag {
+  position: relative;
+  top: -4px;
+  margin-left: 10px;
 }
 </style>
