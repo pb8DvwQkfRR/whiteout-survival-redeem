@@ -1,7 +1,7 @@
 <template>
   <div class="page-title">
     <h2 class="title">WoS Code Redeem</h2>
-      <el-tag class="version-tag">v240621</el-tag>
+      <el-tag class="version-tag">v240701</el-tag>
   </div>
   <div class="gift-code">
     <div class="input">
@@ -60,25 +60,24 @@
                     </div>
                   </template>
                 </el-image>
-                <div class="stove-lv">
-                  <template v-if="stoveLvImageInfo[scope.$index].showImage">
-                    <el-image
-                        style="width: 35px; height: 35px"
-                        :src="scope.row.stove_lv_content"
-                    >
-                      <template #error>
-                        <div class="image-slot" style="width: 35px; height: 35px">
-                          <el-icon><IconPicture size="35" /></el-icon>
-                        </div>
-                      </template>
-                    </el-image>
-                  </template>
-                  <template v-else-if="stoveLvImageInfo[scope.$index].showNumber">
-                    {{ stoveLvImageInfo[scope.$index].number }}
-                  </template>
-                  <template v-else>
-                    {{ scope.row.stove_lv }}
-                  </template>
+                <div
+                    class="stove-lv"
+                    v-if="stoveLvImageInfo[scope.$index].showImage || stoveLvImageInfo[scope.$index].showNumber"
+                >
+                  <el-image
+                      v-if="stoveLvImageInfo[scope.$index].showImage"
+                      style="width: 35px; height: 35px"
+                      :src="scope.row.stove_lv_content"
+                  >
+                    <template #error>
+                      <div class="image-slot" style="width: 35px; height: 35px">
+                        <el-icon><icon-picture size="35" /></el-icon>
+                      </div>
+                    </template>
+                  </el-image>
+                  <span v-if="stoveLvImageInfo[scope.$index].showNumber">
+          {{ stoveLvImageInfo[scope.$index].number }}
+        </span>
                 </div>
               </div>
             </template>
@@ -265,6 +264,8 @@ function handleUpload(file: File) {
   justify-content: center;
 }
 .stove-lv {
+  display: flex;
+  align-items: center;
   margin-left: 10px;
 }
 .el-image {
