@@ -28,7 +28,11 @@
             :header-cell-style="{ 'text-align': 'center' }"
             :row-style="{ height: '60px' }"
         >
-          <el-table-column prop="id" label="ID" width="90px" />
+          <el-table-column prop="id" label="ID" width="90px">
+            <template #default="scope">
+              <span @click="retry(scope.row.id)" style="cursor: pointer; color: #007bff;">{{ scope.row.id }}</span>
+            </template>
+          </el-table-column>
           <el-table-column prop="nickname" label="Name">
             <template #default="scope">
               <div class="name-status">
@@ -160,6 +164,12 @@ watch(cdk, (newVal) => {
 });
 
 onMounted(() => {
+  ElNotification({
+    title: 'Tips!',
+    message: 'You can now click specific ID to retry!',
+    type: 'info',
+    position: 'bottom-right',
+  });
   if (!loadingContainer.value) {
     console.error('Loading container is not available.');
   }
@@ -266,6 +276,7 @@ function processFileContent(content: string) {
         title: 'Error',
         message: `File invalid. ${trimmedLine} is not a valid ID.`,
         type: 'error',
+        position: 'bottom-right',
       });
       return;
     }
@@ -277,8 +288,9 @@ function processFileContent(content: string) {
   if (idsFromFile.length > 0) {
     ElNotification({
       title: 'Success',
-      message: `${idsFromFile.length} IDs added to the list.`,
+      message: `${idsFromFile.length} ID added to the list.`,
       type: 'success',
+      position: 'bottom-right',
     });
   }
 
@@ -295,5 +307,37 @@ function processFileContent(content: string) {
   }));
 
   tableData.value = newTableData;
+}
+
+async function retry(id: string) {
+  if (!cdk.value) {
+    ElNotification({
+      title: 'Warning',
+      message: 'Code cannot be empty.',
+      type: 'warning',
+      duration: 3000,
+    });
+    return;
+  }
+
+  const index = tableData.value.findIndex(item => item.id === id);
+  if (index === -1) return;
+
+  const data = { fid: id, time: getTimestamp(), cdk: cdk.value };
+  try {
+    const loginRes = await getRoleInfo(data, index);
+    if (loginRes?.code === 0) {
+      await exchangeCode(data, index);
+    }
+    tableData.value[index].isCompleted = true;
+    const cachedNames = JSON.parse(localStorage.getItem('cachedNames') || '{}');
+    const currentName = tableData.value[index].nickname;
+    if (cachedNames[id] !== currentName) {
+      cachedNames[id] = currentName;
+      localStorage.setItem('cachedNames', JSON.stringify(cachedNames));
+    }
+  } catch (error) {
+    console.error(error);
+  }
 }
 </script>

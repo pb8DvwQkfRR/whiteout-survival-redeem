@@ -25,6 +25,7 @@ async function retryRequest<T>(fn: () => Promise<T>, retries: number, retryDelay
           title: 'Hold on...',
           message: `Request failed with status ${err.response.status}. Retrying... Attempt ${retryCount}`,
           type: 'warning',
+          duration: 3000,
         });
         await sleep(delay);
         if (retryCount >= retries) {
