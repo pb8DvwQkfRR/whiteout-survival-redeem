@@ -1,7 +1,7 @@
 <template>
   <div class="page-title">
     <h2 class="title">WoS Code Redeem</h2>
-      <el-tag class="version-tag">v240701</el-tag>
+      <el-tag class="version-tag">v240702</el-tag>
   </div>
   <div class="gift-code">
     <div class="input">
@@ -95,7 +95,9 @@ import { getRoleInfoApi, exchangeCodeApi } from '@/api';
 import { ids } from '@/assets/userData';
 import { getTimestamp } from '@/utils';
 
+import { ElNotification } from 'element-plus';
 import { Picture as IconPicture, Check, Close, Warning } from '@element-plus/icons-vue';
+import './index.less';
 
 const cdk = ref('');
 const isLoading = ref(false);
@@ -123,28 +125,30 @@ const tableData = ref(
 
 const stoveLvImageInfo = computed(() => {
   return tableData.value.map(row => {
-    const isMultipleOfFive = Number(row.stove_lv) % 5 === 0;
+    const stoveLv = Number(row.stove_lv);
+    const isMultipleOfFive = stoveLv % 5 === 0;
+    let showImage = false;
+    let showNumber = false;
+    let number = '';
 
-    if (Number(row.stove_lv) > 30 && Number(row.stove_lv) < 35) {
-      const number = Number(row.stove_lv) - 30;
-      return {
-        showImage: false,
-        showNumber: number >= 1,
-        number: number >= 1 ? `${Number(row.stove_lv_content)} +${number}` : '',
-      };
-    } else if (Number(row.stove_lv) >= 35) {
-      const plusNumber = isMultipleOfFive ? "" : ` +${(Number(row.stove_lv) - 35) % 5}`;
-      return {
-        showImage: true,
-        showNumber: !isMultipleOfFive && plusNumber !== "",
-        number: plusNumber,
-      };
+    if (stoveLv < 30) {
+      showNumber = stoveLv > 0;
+      number = stoveLv > 0 ? stoveLv.toString() : '';
+    } else if (stoveLv >= 30 && stoveLv < 35) {
+      const extraNumber = stoveLv - 30;
+      showNumber = extraNumber >= 1;
+      number = extraNumber >= 1 ? `${Number(row.stove_lv_content)} +${extraNumber}` : '';
+    } else if (stoveLv >= 35) {
+      showImage = true;
+      const plusNumber = isMultipleOfFive ? "" : ` +${(stoveLv - 35) % 5}`;
+      showNumber = !isMultipleOfFive;
+      number = plusNumber;
     }
 
     return {
-      showImage: false,
-      showNumber: false,
-      number: '',
+      showImage,
+      showNumber,
+      number,
     };
   });
 });
@@ -159,6 +163,13 @@ onMounted(() => {
   if (!loadingContainer.value) {
     console.error('Loading container is not available.');
   }
+
+  const cachedNames = JSON.parse(localStorage.getItem('cachedNames') || '{}');
+  tableData.value.forEach((row, index) => {
+    if (cachedNames[row.id]) {
+      tableData.value[index].nickname = cachedNames[row.id];
+    }
+  });
 });
 
 function getStatusColor(row: Row) {
@@ -196,6 +207,13 @@ async function startConfirm() {
       console.error(error);
     }
     tableData.value[i].isCompleted = true;
+
+    const cachedNames = JSON.parse(localStorage.getItem('cachedNames') || '{}');
+    const currentName = tableData.value[i].nickname;
+    if (cachedNames[currentId] !== currentName) {
+      cachedNames[currentId] = currentName;
+      localStorage.setItem('cachedNames', JSON.stringify(cachedNames));
+    }
   }
 
   loading.close();
@@ -222,107 +240,60 @@ async function exchangeCode(data: any, index: number) {
 }
 
 function handleUpload(file: File) {
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    const content = (event.target as FileReader).result as string;
-    const idsFromFile = content.split('\n').map(id => id.trim()).filter(id => id);
-
-    const newTableData = idsFromFile.map(id => ({
-      id,
-      getStatus: 1,
-      nickname: '',
-      avatar_image: '',
-      stove_lv: '',
-      stove_lv_content: '',
-      msg: '',
-      isCompleted: false,
-      err_code: null,
-    }));
-
-    tableData.value = newTableData;
-  };
-
-  reader.readAsText(file);
+  if (file.text) {
+    file.text().then(processFileContent).catch(console.error);
+  } else {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = (event.target as FileReader).result as string;
+      processFileContent(content);
+    };
+    reader.onerror = (error) => console.error('Error reading file:', error);
+    reader.readAsText(file);
+  }
   return false;
 }
-</script>
 
-<style scoped lang="less">
-.gift-code {
-  margin: 20px;
+function processFileContent(content: string) {
+  const normalizedContent = content.replace(/\r\n/g, '\n');
+  const lines = normalizedContent.split('\n');
+  const idsFromFile = [];
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (!/^\d+$/.test(trimmedLine) && trimmedLine !== '') {
+      ElNotification({
+        title: 'Error',
+        message: `File invalid. ${trimmedLine} is not a valid ID.`,
+        type: 'error',
+      });
+      return;
+    }
+    if (trimmedLine !== '') {
+      idsFromFile.push(trimmedLine);
+    }
+  }
+  localStorage.removeItem('cachedNames');
+  if (idsFromFile.length > 0) {
+    ElNotification({
+      title: 'Success',
+      message: `${idsFromFile.length} IDs added to the list.`,
+      type: 'success',
+    });
+  }
+
+  const newTableData = idsFromFile.map(id => ({
+    id,
+    getStatus: 1,
+    nickname: '',
+    avatar_image: '',
+    stove_lv: '',
+    stove_lv_content: '',
+    msg: '',
+    isCompleted: false,
+    err_code: null,
+  }));
+
+  tableData.value = newTableData;
 }
-.input {
-  display: flex;
-}
-.list {
-  margin-top: 20px;
-  text-align: center;
-}
-.avatar-f-lv {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.stove-lv {
-  display: flex;
-  align-items: center;
-  margin-left: 10px;
-}
-.el-image {
-  max-width: 50px;
-  max-height: 50px;
-  width: 100%;
-  height: 100%;
-}
-.image-slot {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  font-size: 30px;
-}
-.image-slot .el-icon {
-  font-size: 30px;
-}
-.table-container {
-  overflow-x: auto;
-}
-.loading-container {
-  font-family: var(--el-font-family);
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100%;
-  height: 100%;
-  z-index: 1000;
-  pointer-events: none;
-}
-.name-status {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-.el-icon {
-  font-size: 18px;
-}
-.page-title {
-  font-family: var(--el-font-family);
-  text-align: center;
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.title {
-  margin: 0;
-  font-size: 24px;
-}
-.version-tag {
-  position: relative;
-  top: -4px;
-  margin-left: 10px;
-}
-</style>
+</script>
