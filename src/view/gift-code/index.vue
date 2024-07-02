@@ -165,7 +165,7 @@ watch(cdk, (newVal) => {
 
 onMounted(() => {
   ElNotification({
-    title: 'Tips!',
+    title: 'Tips',
     message: 'You can now click specific ID to retry!',
     type: 'info',
     position: 'bottom-right',
@@ -313,7 +313,7 @@ async function retry(id: string) {
   if (!cdk.value) {
     ElNotification({
       title: 'Warning',
-      message: 'Code cannot be empty.',
+      message: 'Code cannot be empty!',
       type: 'warning',
       duration: 3000,
     });
