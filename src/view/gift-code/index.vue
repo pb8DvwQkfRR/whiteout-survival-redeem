@@ -1,7 +1,7 @@
 <template>
   <div class="page-title">
     <h2 class="title">WoS Code Redeem</h2>
-      <el-tag class="version-tag">v240702</el-tag>
+      <el-tag class="version-tag">v240825</el-tag>
   </div>
   <div class="gift-code">
     <div class="input">

@@ -16,11 +16,18 @@ async function retryRequest<T>(fn: () => Promise<T>, retries: number, retryDelay
   let retryCount = 0;
   while (retryCount < retries) {
     try {
-      return await fn();
+      const response = await fn();
+      if (typeof response === 'object' && response !== null && 'err_code' in response && response.err_code === 40004) {
+        throw new Error('40004');
+      }
+      return response;
     } catch (err: any) {
-      if (err.response && [429, 500, 503].includes(err.response.status)) {
-        retryCount++;
-        const delay = retryDelay + (retryCount - 1) * 1000; // 线性退避时间，每次增加1秒
+      retryCount++;
+      if (err.message === '40004') {
+        continue;
+      } else if (err.response && [429, 500, 503].includes(err.response.status)) {
+        // Apply delay and show notification for other errors
+        const delay = retryDelay + (retryCount - 1) * 1000; // Linear backoff time, increase by 1 second each time
         ElNotification({
           title: 'Hold on...',
           message: `Request failed with status ${err.response.status}. Retrying... Attempt ${retryCount}`,
@@ -28,15 +35,16 @@ async function retryRequest<T>(fn: () => Promise<T>, retries: number, retryDelay
           duration: 3000,
         });
         await sleep(delay);
-        if (retryCount >= retries) {
-          ElNotification({
-            title: 'Request Failed',
-            message: `Request failed after ${retryCount} attempts`,
-            type: 'error',
-          });
-          return Promise.reject(err);
-        }
       } else {
+        return Promise.reject(err);
+      }
+
+      if (retryCount >= retries) {
+        ElNotification({
+          title: 'Request Failed',
+          message: `Request failed after ${retryCount} attempts`,
+          type: 'error',
+        });
         return Promise.reject(err);
       }
     }
